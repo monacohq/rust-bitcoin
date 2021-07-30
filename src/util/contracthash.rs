@@ -30,7 +30,7 @@ use std::{error, fmt};
 
 use hash_types::ScriptHash;
 use network::constants::Network;
-use util::address;
+use util::address::{self, Blockchain};
 
 /// Encoding of "pubkey here" in script; from Bitcoin Core `src/script/script.h`
 static PUBKEY: u8 = 0xFE;
@@ -192,7 +192,8 @@ pub fn create_address<C: secp256k1::Verification>(secp: &Secp256k1<C>,
                       network: Network,
                       contract: &[u8],
                       keys: &[PublicKey],
-                      template: &Template)
+                      template: &Template,
+                      blockchain: Blockchain)
                       -> Result<address::Address, Error> {
     let keys = tweak_keys(secp, keys, contract);
     let script = template.to_script(&keys)?;
@@ -200,7 +201,8 @@ pub fn create_address<C: secp256k1::Verification>(secp: &Secp256k1<C>,
         network: network,
         payload: address::Payload::ScriptHash(
             ScriptHash::hash(&script[..])
-        )
+        ),
+        blockchain,
     })
 }
 
@@ -306,7 +308,7 @@ mod tests {
         // This is the first withdraw ever, in alpha a94f95cc47b444c10449c0eed51d895e4970560c4a1a9d15d46124858abc3afe
         let contract = hex!("5032534894ffbf32c1f1c0d3089b27c98fd991d5d7329ebd7d711223e2cde5a9417a1fa3e852c576");
 
-        let addr = create_address(&secp, Network::Testnet, &contract, keys, &alpha_template!()).unwrap();
+        let addr = create_address(&secp, Network::Testnet, &contract, keys, &alpha_template!(), Blockchain::Bitcoin).unwrap();
         assert_eq!(addr.to_string(), "2N3zXjbwdTcPsJiy8sUK9FhWJhqQCxA8Jjr".to_owned());
     }
 

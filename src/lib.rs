@@ -84,6 +84,7 @@ pub use network::constants::Network;
 pub use util::Error;
 pub use util::address::Address;
 pub use util::address::AddressType;
+pub use util::address::Blockchain;
 pub use util::amount::Amount;
 pub use util::amount::Denomination;
 pub use util::amount::SignedAmount;
