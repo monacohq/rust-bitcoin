@@ -148,14 +148,23 @@ pub fn serialize_hex<T: Encodable + ?Sized>(data: &T) -> String {
 /// Deserialize an object from a vector, will error if said deserialization
 /// doesn't consume the entire vector.
 pub fn deserialize<T: Decodable>(data: &[u8]) -> Result<T, Error> {
-    let (rv, consumed) = deserialize_partial(data)?;
+    let (rv, _consumed) = deserialize_partial(data)?;
 
-    // Fail if data are not consumed entirely.
-    if consumed == data.len() {
-        Ok(rv)
-    } else {
-        Err(Error::ParseFailed("data not consumed entirely when explicitly deserializing"))
-    }
+    // Alt-coins (dogecoin, namecoin) add an additional field to the blockheader
+    // called `auxpow` that is a pointer to arbitrary data used for making
+    // commitments during merge mining. Just ignore the usual length check here
+    // so as not to fail deserialization when auxpow data exists.
+
+    Ok(rv)
+
+    // // Fail if data are not consumed entirely.
+    // if consumed == data.len() {
+    //     Ok(rv)
+    // } else {
+    //     Err(Error::ParseFailed(
+    //         "data not consumed entirely when explicitly deserializing",
+    //     ))
+    // }
 }
 
 /// Deserialize an object from a vector, but will not report an error if said deserialization
