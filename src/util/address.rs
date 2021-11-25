@@ -296,6 +296,14 @@ impl Prefix {
             }
         }
     }
+
+    /// Returns the byte value if prefix has one (i.e., pubkey or script).
+    pub fn as_byte(&self) -> Option<u8> {
+        match self {
+            Prefix::Pubkey(v) | Prefix::Script(v) => Some(*v),
+            Prefix::Segwit(_) => None,
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
