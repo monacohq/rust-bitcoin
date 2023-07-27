@@ -36,7 +36,7 @@ use crate::blockdata::constants::{
     DOGECOIN_SCRIPT_ADDRESS_PREFIX_MAIN, DOGECOIN_SCRIPT_ADDRESS_PREFIX_TEST,
     LITECOIN_PUBKEY_ADDRESS_PREFIX_MAIN, LITECOIN_PUBKEY_ADDRESS_PREFIX_TEST,
     LITECOIN_SCRIPT_ADDRESS_PREFIX_MAIN, LITECOIN_SCRIPT_ADDRESS_PREFIX_TEST,
-    MAX_SCRIPT_ELEMENT_SIZE,
+    MAX_SCRIPT_ELEMENT_SIZE, STRATIS_PUBKEY_ADDRESS_PREFIX_MAIN, STRATIS_PUBKEY_ADDRESS_PREFIX_TEST, STRATIS_SCRIPT_ADDRESS_PREFIX_MAIN, STRATIS_SCRIPT_ADDRESS_PREFIX_TEST,
 };
 use crate::blockdata::script::Instruction;
 use crate::blockdata::{opcodes, script};
@@ -617,6 +617,8 @@ pub enum Blockchain {
     Dogecoin,
     /// The Litecoin blockchain.
     Litecoin,
+    /// The Stratis blockchain.
+    Stratis
 }
 
 impl fmt::Display for Blockchain {
@@ -625,6 +627,7 @@ impl fmt::Display for Blockchain {
             Blockchain::Bitcoin => "Bitcoin",
             Blockchain::Dogecoin => "Dogecoin",
             Blockchain::Litecoin => "Litecoin",
+            Blockchain::Stratis => "Stratis",
         };
         write!(fmt, "{}", s)
     }
@@ -664,6 +667,8 @@ impl Prefix {
                     (_, Blockchain::Dogecoin) => DOGECOIN_PUBKEY_ADDRESS_PREFIX_TEST,
                     (Network::Bitcoin, Blockchain::Litecoin) => LITECOIN_PUBKEY_ADDRESS_PREFIX_MAIN,
                     (_, Blockchain::Litecoin) => LITECOIN_PUBKEY_ADDRESS_PREFIX_TEST,
+                    (Network::Bitcoin, Blockchain::Stratis) => STRATIS_PUBKEY_ADDRESS_PREFIX_MAIN,
+                    (_, Blockchain::Stratis) => STRATIS_PUBKEY_ADDRESS_PREFIX_TEST,
                 };
                 Prefix::Pubkey(b)
             }
@@ -675,6 +680,8 @@ impl Prefix {
                     (_, Blockchain::Dogecoin) => DOGECOIN_SCRIPT_ADDRESS_PREFIX_TEST,
                     (Network::Bitcoin, Blockchain::Litecoin) => LITECOIN_SCRIPT_ADDRESS_PREFIX_MAIN,
                     (_, Blockchain::Litecoin) => LITECOIN_SCRIPT_ADDRESS_PREFIX_TEST,
+                    (Network::Bitcoin, Blockchain::Stratis) => STRATIS_SCRIPT_ADDRESS_PREFIX_MAIN,
+                    (_, Blockchain::Stratis) => STRATIS_SCRIPT_ADDRESS_PREFIX_TEST,
                 };
                 Prefix::Script(b)
             }
@@ -686,6 +693,8 @@ impl Prefix {
                     (Network::Regtest, Blockchain::Bitcoin) => "bcrt".to_owned(),
                     (Network::Bitcoin, Blockchain::Litecoin) => "ltc".to_owned(),
                     (Network::Testnet, Blockchain::Litecoin) => "tltc".to_owned(),
+                    (Network::Bitcoin, Blockchain::Stratis) => "STRAX".to_owned(),
+                    (Network::Testnet, Blockchain::Stratis) => "TSTRAX".to_owned(),
                     // FIXME: Ugh, this is hackish as hell.
                     (network, chain) =>
                         format!("segwit unsupported for network/chain {}/{}", network, chain),
@@ -1006,8 +1015,8 @@ impl FromStr for Address {
         // try bech32
         let bech32_network = match find_bech32_prefix(s) {
             // note that upper or lowercase is allowed but NOT mixed case
-            "bc" | "BC" | "ltc" | "LTC" => Some(Network::Bitcoin),
-            "tb" | "TB" | "tltc" | "TLTC" => Some(Network::Testnet), // this may also be signet
+            "bc" | "BC" | "ltc" | "LTC" | "X" => Some(Network::Bitcoin),
+            "tb" | "TB" | "tltc" | "TLTC" | "q" => Some(Network::Testnet), // this may also be signet
             "bcrt" | "BCRT" => Some(Network::Regtest),
             _ => None,
         };
@@ -1064,28 +1073,32 @@ impl FromStr for Address {
         let (network, payload, prefix) = match prefix_byte {
             BITCOIN_PUBKEY_ADDRESS_PREFIX_MAIN
             | DOGECOIN_PUBKEY_ADDRESS_PREFIX_MAIN
-            | LITECOIN_PUBKEY_ADDRESS_PREFIX_MAIN => (
+            | LITECOIN_PUBKEY_ADDRESS_PREFIX_MAIN
+            | STRATIS_PUBKEY_ADDRESS_PREFIX_MAIN => (
                 Network::Bitcoin,
                 Payload::PubkeyHash(PubkeyHash::from_slice(&data[1..]).unwrap()),
                 Prefix::pubkey(prefix_byte),
             ),
             BITCOIN_SCRIPT_ADDRESS_PREFIX_MAIN
             | DOGECOIN_SCRIPT_ADDRESS_PREFIX_MAIN
-            | LITECOIN_SCRIPT_ADDRESS_PREFIX_MAIN => (
+            | LITECOIN_SCRIPT_ADDRESS_PREFIX_MAIN
+            | STRATIS_SCRIPT_ADDRESS_PREFIX_MAIN => (
                 Network::Bitcoin,
                 Payload::ScriptHash(ScriptHash::from_slice(&data[1..]).unwrap()),
                 Prefix::script(prefix_byte),
             ),
             BITCOIN_PUBKEY_ADDRESS_PREFIX_TEST
             | DOGECOIN_PUBKEY_ADDRESS_PREFIX_TEST
-            | LITECOIN_PUBKEY_ADDRESS_PREFIX_TEST => (
+            | LITECOIN_PUBKEY_ADDRESS_PREFIX_TEST
+            | STRATIS_PUBKEY_ADDRESS_PREFIX_TEST => (
                 Network::Testnet,
                 Payload::PubkeyHash(PubkeyHash::from_slice(&data[1..]).unwrap()),
                 Prefix::pubkey(prefix_byte),
             ),
             BITCOIN_SCRIPT_ADDRESS_PREFIX_TEST
             | DOGECOIN_SCRIPT_ADDRESS_PREFIX_TEST
-            | LITECOIN_SCRIPT_ADDRESS_PREFIX_TEST => (
+            | LITECOIN_SCRIPT_ADDRESS_PREFIX_TEST
+            | STRATIS_SCRIPT_ADDRESS_PREFIX_TEST => (
                 Network::Testnet,
                 Payload::ScriptHash(ScriptHash::from_slice(&data[1..]).unwrap()),
                 Prefix::script(prefix_byte),
