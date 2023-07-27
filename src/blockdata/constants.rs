@@ -64,6 +64,17 @@ pub const LITECOIN_SCRIPT_ADDRESS_PREFIX_MAIN: u8 = 50;
 pub const LITECOIN_PUBKEY_ADDRESS_PREFIX_TEST: u8 = 111;
 /// Test (tesnet, signet, regtest) script address prefix.
 pub const LITECOIN_SCRIPT_ADDRESS_PREFIX_TEST: u8 = 58;
+
+// TODO: review this
+/// Mainnet (stratis) pubkey address prefix.
+pub const STRATIS_PUBKEY_ADDRESS_PREFIX_MAIN: u8 = 75;
+/// Mainnet (stratis) script address prefix.
+pub const STRATIS_SCRIPT_ADDRESS_PREFIX_MAIN: u8 = 125;
+/// Test (tesnet, signet, regtest) pubkey address prefix.
+pub const STRATIS_PUBKEY_ADDRESS_PREFIX_TEST: u8 = 120;
+/// Test (tesnet, signet, regtest) script address prefix.
+pub const STRATIS_SCRIPT_ADDRESS_PREFIX_TEST: u8 = 125;
+
 /// The maximum allowed script size.
 pub const MAX_SCRIPT_ELEMENT_SIZE: usize = 520;
 /// How may blocks between halvings.
