@@ -36,7 +36,11 @@ use crate::blockdata::constants::{
     DOGECOIN_SCRIPT_ADDRESS_PREFIX_MAIN, DOGECOIN_SCRIPT_ADDRESS_PREFIX_TEST,
     LITECOIN_PUBKEY_ADDRESS_PREFIX_MAIN, LITECOIN_PUBKEY_ADDRESS_PREFIX_TEST,
     LITECOIN_SCRIPT_ADDRESS_PREFIX_MAIN, LITECOIN_SCRIPT_ADDRESS_PREFIX_TEST,
-    MAX_SCRIPT_ELEMENT_SIZE, STRATIS_PUBKEY_ADDRESS_PREFIX_MAIN, STRATIS_PUBKEY_ADDRESS_PREFIX_TEST, STRATIS_SCRIPT_ADDRESS_PREFIX_MAIN, STRATIS_SCRIPT_ADDRESS_PREFIX_TEST,
+    STRATIS_PUBKEY_ADDRESS_PREFIX_MAIN, STRATIS_PUBKEY_ADDRESS_PREFIX_TEST,
+    STRATIS_SCRIPT_ADDRESS_PREFIX_MAIN, STRATIS_SCRIPT_ADDRESS_PREFIX_TEST,
+    RAVENCOIN_PUBKEY_ADDRESS_PREFIX_MAIN, RAVENCOIN_PUBKEY_ADDRESS_PREFIX_TEST,
+    RAVENCOIN_SCRIPT_ADDRESS_PREFIX_MAIN, RAVENCOIN_SCRIPT_ADDRESS_PREFIX_TEST,
+    MAX_SCRIPT_ELEMENT_SIZE,
 };
 use crate::blockdata::script::Instruction;
 use crate::blockdata::{opcodes, script};
@@ -618,7 +622,9 @@ pub enum Blockchain {
     /// The Litecoin blockchain.
     Litecoin,
     /// The Stratis blockchain.
-    Stratis
+    Stratis,
+    /// The Ravencoin blockchain.
+    Ravencoin,
 }
 
 impl fmt::Display for Blockchain {
@@ -628,6 +634,7 @@ impl fmt::Display for Blockchain {
             Blockchain::Dogecoin => "Dogecoin",
             Blockchain::Litecoin => "Litecoin",
             Blockchain::Stratis => "Stratis",
+            Blockchain::Ravencoin => "Ravencoin",
         };
         write!(fmt, "{}", s)
     }
@@ -669,6 +676,8 @@ impl Prefix {
                     (_, Blockchain::Litecoin) => LITECOIN_PUBKEY_ADDRESS_PREFIX_TEST,
                     (Network::Bitcoin, Blockchain::Stratis) => STRATIS_PUBKEY_ADDRESS_PREFIX_MAIN,
                     (_, Blockchain::Stratis) => STRATIS_PUBKEY_ADDRESS_PREFIX_TEST,
+                    (Network::Bitcoin, Blockchain::Ravencoin) => RAVENCOIN_PUBKEY_ADDRESS_PREFIX_MAIN,
+                    (_, Blockchain::Ravencoin) => RAVENCOIN_PUBKEY_ADDRESS_PREFIX_TEST,
                 };
                 Prefix::Pubkey(b)
             }
@@ -682,6 +691,8 @@ impl Prefix {
                     (_, Blockchain::Litecoin) => LITECOIN_SCRIPT_ADDRESS_PREFIX_TEST,
                     (Network::Bitcoin, Blockchain::Stratis) => STRATIS_SCRIPT_ADDRESS_PREFIX_MAIN,
                     (_, Blockchain::Stratis) => STRATIS_SCRIPT_ADDRESS_PREFIX_TEST,
+                    (Network::Bitcoin, Blockchain::Ravencoin) => RAVENCOIN_SCRIPT_ADDRESS_PREFIX_MAIN,
+                    (_, Blockchain::Ravencoin) => RAVENCOIN_SCRIPT_ADDRESS_PREFIX_TEST,
                 };
                 Prefix::Script(b)
             }
@@ -1069,12 +1080,13 @@ impl FromStr for Address {
         let prefix_byte = data[0];
 
         #[allow(unreachable_patterns)] // Duplicate byte values left in to assist clarity.
-        // BTC | DOGE | LTC
+        // BTC | DOGE | LTC | STRAX | RVN
         let (network, payload, prefix) = match prefix_byte {
             BITCOIN_PUBKEY_ADDRESS_PREFIX_MAIN
             | DOGECOIN_PUBKEY_ADDRESS_PREFIX_MAIN
             | LITECOIN_PUBKEY_ADDRESS_PREFIX_MAIN
-            | STRATIS_PUBKEY_ADDRESS_PREFIX_MAIN => (
+            | STRATIS_PUBKEY_ADDRESS_PREFIX_MAIN
+            | RAVENCOIN_PUBKEY_ADDRESS_PREFIX_MAIN => (
                 Network::Bitcoin,
                 Payload::PubkeyHash(PubkeyHash::from_slice(&data[1..]).unwrap()),
                 Prefix::pubkey(prefix_byte),
@@ -1082,7 +1094,8 @@ impl FromStr for Address {
             BITCOIN_SCRIPT_ADDRESS_PREFIX_MAIN
             | DOGECOIN_SCRIPT_ADDRESS_PREFIX_MAIN
             | LITECOIN_SCRIPT_ADDRESS_PREFIX_MAIN
-            | STRATIS_SCRIPT_ADDRESS_PREFIX_MAIN => (
+            | STRATIS_SCRIPT_ADDRESS_PREFIX_MAIN
+            | RAVENCOIN_SCRIPT_ADDRESS_PREFIX_MAIN => (
                 Network::Bitcoin,
                 Payload::ScriptHash(ScriptHash::from_slice(&data[1..]).unwrap()),
                 Prefix::script(prefix_byte),
@@ -1090,7 +1103,8 @@ impl FromStr for Address {
             BITCOIN_PUBKEY_ADDRESS_PREFIX_TEST
             | DOGECOIN_PUBKEY_ADDRESS_PREFIX_TEST
             | LITECOIN_PUBKEY_ADDRESS_PREFIX_TEST
-            | STRATIS_PUBKEY_ADDRESS_PREFIX_TEST => (
+            | STRATIS_PUBKEY_ADDRESS_PREFIX_TEST
+            | RAVENCOIN_PUBKEY_ADDRESS_PREFIX_TEST => (
                 Network::Testnet,
                 Payload::PubkeyHash(PubkeyHash::from_slice(&data[1..]).unwrap()),
                 Prefix::pubkey(prefix_byte),
@@ -1098,7 +1112,8 @@ impl FromStr for Address {
             BITCOIN_SCRIPT_ADDRESS_PREFIX_TEST
             | DOGECOIN_SCRIPT_ADDRESS_PREFIX_TEST
             | LITECOIN_SCRIPT_ADDRESS_PREFIX_TEST
-            | STRATIS_SCRIPT_ADDRESS_PREFIX_TEST => (
+            | STRATIS_SCRIPT_ADDRESS_PREFIX_TEST
+            | RAVENCOIN_SCRIPT_ADDRESS_PREFIX_TEST => (
                 Network::Testnet,
                 Payload::ScriptHash(ScriptHash::from_slice(&data[1..]).unwrap()),
                 Prefix::script(prefix_byte),
@@ -1591,6 +1606,7 @@ mod tests {
         let pubkey = PublicKey::from_str(pubkey_string).expect("pubkey");
 
         let result = address.is_related_to_pubkey(&pubkey);
+
         assert!(result);
 
         let unused_pubkey = PublicKey::from_str(
@@ -1748,6 +1764,21 @@ mod tests {
             "2N2PJEucf6QY2kNFuJ4chQEBoyZWszRQE16", // Script hash (P2SH address) - Legacy/Deprecated
             "QVk4MvUu7Wb7tZ1wvAeiUvdF7wxhvpyLLK",  // Script hash (P2SH address)
             "tltc1qcefwt8q647lstt5829exynqnecr9uxq9pk3yr5", // Bech32 pubkey hash or script hash
+        ];
+        for s in addrs.iter() {
+            let _ = Address::from_str(s).expect(&format!("Failed to parse address string: {}", s));
+        }
+    }
+
+    #[test]
+    fn parse_ravencoin_address_from_str() {
+        let addrs = vec![
+            // Mainnet addresses.
+            "RVG96MbaKEDFzzj9NzbAuxkDt86KAm2Qj5", // Pubkey hash (P2PKH address)
+            "rFSRmpYa48SY835vija8JMAfXnAteJr9nx", // Script hash (P2SH address)
+            // Testnet addresses.
+            "mrRncXkHjrhtoipKauJF3mKgZjUbtXC6b3", // Pubkey hash (P2PKH address)
+            "n3d1tRxEUEpx7cUHex38D6R5pz6srH1akt", // Script hash (P2SH address)
         ];
         for s in addrs.iter() {
             let _ = Address::from_str(s).expect(&format!("Failed to parse address string: {}", s));
